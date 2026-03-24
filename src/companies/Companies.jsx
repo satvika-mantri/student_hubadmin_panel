@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 
-function Users() {
-  const [users, setUsers]             = useState([]);
+function Companies() {
+  const [companies, setCompanies]     = useState([]);
   const [page, setPage]               = useState(1);
   const [total, setTotal]             = useState(0);
   const [totalPages, setTotalPages]   = useState(0);
@@ -11,23 +11,23 @@ function Users() {
   const limit = 10;
 
   useEffect(() => {
-    fetchUsers();
+    fetchCompanies();
   }, [page, search]);
 
-  const fetchUsers = async () => {
+  const fetchCompanies = async () => {
     setLoading(true);
     try {
       const res = await fetch(
-        `https://studenthub-backend-woad.vercel.app/api/bulk?type=users&page=${page}&limit=${limit}&search=${search}`
+        `https://studenthub-backend-woad.vercel.app/api/bulk?type=companies&page=${page}&limit=${limit}&search=${search}`
       );
       const json = await res.json();
       if (json.success) {
-        setUsers(json.data);
+        setCompanies(json.data);
         setTotal(json.total);
         setTotalPages(json.totalPages);
       }
     } catch (err) {
-      console.error("Failed to fetch users:", err);
+      console.error("Failed to fetch companies:", err);
     } finally {
       setLoading(false);
     }
@@ -50,15 +50,15 @@ function Users() {
 
       {/* ── Header ── */}
       <div>
-        <h1>{total} Users</h1>
-        <p>Total {total} registered users</p>
+        <h1>{total} Companies</h1>
+        <p>Total {total} registered companies</p>
       </div>
 
       {/* ── Search Bar ── */}
       <form onSubmit={handleSearch}>
         <input
           type="text"
-          placeholder="Search by name or email..."
+          placeholder="Search by name or industry..."
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
         />
@@ -72,7 +72,7 @@ function Users() {
       <table>
         <thead>
           <tr>
-            {["#", "Name", "Email", "Phone", "Degree", "University", "Role", "Status", "Joined"].map((h) => (
+            {["#", "Name", "Industry", "Location", "Website", "Status", "Joined"].map((h) => (
               <th key={h}>{h}</th>
             ))}
           </tr>
@@ -80,36 +80,36 @@ function Users() {
         <tbody>
           {loading ? (
             <tr>
-              <td colSpan={9}>⏳ Loading users...</td>
+              <td colSpan={7}>⏳ Loading companies...</td>
             </tr>
-          ) : users.length === 0 ? (
+          ) : companies.length === 0 ? (
             <tr>
-              <td colSpan={9}>No users found</td>
+              <td colSpan={7}>No companies found</td>
             </tr>
           ) : (
-            users.map((user, index) => (
-              <tr key={user.user_id}>
+            companies.map((company, index) => (
+              <tr key={company.company_id}>
                 <td>{(page - 1) * limit + index + 1}</td>
 
                 <td>
-                  <span>{user.full_name?.charAt(0).toUpperCase()}</span>
-                  <span>{user.full_name}</span>
+                  <span>{company.name?.charAt(0).toUpperCase()}</span>
+                  <span>{company.name}</span>
                 </td>
 
-                <td>{user.email}</td>
+                <td>{company.industry || "—"}</td>
 
-                <td>{user.phone || "—"}</td>
-
-                <td>{user.degree || "—"}</td>
-
-                <td>{user.university || "—"}</td>
-
-                <td>{user.role_name?.replace(/_/g, " ")}</td>
-
-                <td>{user.status}</td>
+                <td>{company.location || "—"}</td>
 
                 <td>
-                  {new Date(user.created_at).toLocaleDateString("en-IN", {
+                  {company.website
+                    ? <a href={company.website} target="_blank" rel="noreferrer">{company.website}</a>
+                    : "—"}
+                </td>
+
+                <td>{company.status}</td>
+
+                <td>
+                  {new Date(company.created_at).toLocaleDateString("en-IN", {
                     day: "2-digit", month: "short", year: "numeric",
                   })}
                 </td>
@@ -123,7 +123,7 @@ function Users() {
       {totalPages > 1 && (
         <div>
           <span>
-            Showing {(page - 1) * limit + 1}–{Math.min(page * limit, total)} of {total} users
+            Showing {(page - 1) * limit + 1}–{Math.min(page * limit, total)} of {total} companies
           </span>
           <div>
             <button
@@ -134,12 +134,7 @@ function Users() {
             </button>
 
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-              <button
-                key={p}
-                onClick={() => setPage(p)}
-              >
-                {p}
-              </button>
+              <button key={p} onClick={() => setPage(p)}>{p}</button>
             ))}
 
             <button
@@ -155,4 +150,4 @@ function Users() {
   );
 }
 
-export default Users;
+export default Companies;

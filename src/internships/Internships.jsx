@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 
-function Users() {
-  const [users, setUsers]             = useState([]);
+function Internships() {
+  const [internships, setInternships] = useState([]);
   const [page, setPage]               = useState(1);
   const [total, setTotal]             = useState(0);
   const [totalPages, setTotalPages]   = useState(0);
@@ -11,23 +11,23 @@ function Users() {
   const limit = 10;
 
   useEffect(() => {
-    fetchUsers();
+    fetchInternships();
   }, [page, search]);
 
-  const fetchUsers = async () => {
+  const fetchInternships = async () => {
     setLoading(true);
     try {
       const res = await fetch(
-        `https://studenthub-backend-woad.vercel.app/api/bulk?type=users&page=${page}&limit=${limit}&search=${search}`
+        `https://studenthub-backend-woad.vercel.app/api/bulk?type=internships&page=${page}&limit=${limit}&search=${search}`
       );
       const json = await res.json();
       if (json.success) {
-        setUsers(json.data);
+        setInternships(json.data);
         setTotal(json.total);
         setTotalPages(json.totalPages);
       }
     } catch (err) {
-      console.error("Failed to fetch users:", err);
+      console.error("Failed to fetch internships:", err);
     } finally {
       setLoading(false);
     }
@@ -50,15 +50,15 @@ function Users() {
 
       {/* ── Header ── */}
       <div>
-        <h1>{total} Users</h1>
-        <p>Total {total} registered users</p>
+        <h1>{total} Internships</h1>
+        <p>Total {total} internship listings</p>
       </div>
 
       {/* ── Search Bar ── */}
       <form onSubmit={handleSearch}>
         <input
           type="text"
-          placeholder="Search by name or email..."
+          placeholder="Search by title, company or location..."
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
         />
@@ -72,7 +72,7 @@ function Users() {
       <table>
         <thead>
           <tr>
-            {["#", "Name", "Email", "Phone", "Degree", "University", "Role", "Status", "Joined"].map((h) => (
+            {["#", "Title", "Company", "Location", "Stipend", "Duration", "Type", "Applications", "Status", "Posted"].map((h) => (
               <th key={h}>{h}</th>
             ))}
           </tr>
@@ -80,36 +80,35 @@ function Users() {
         <tbody>
           {loading ? (
             <tr>
-              <td colSpan={9}>⏳ Loading users...</td>
+              <td colSpan={10}>⏳ Loading internships...</td>
             </tr>
-          ) : users.length === 0 ? (
+          ) : internships.length === 0 ? (
             <tr>
-              <td colSpan={9}>No users found</td>
+              <td colSpan={10}>No internships found</td>
             </tr>
           ) : (
-            users.map((user, index) => (
-              <tr key={user.user_id}>
+            internships.map((internship, index) => (
+              <tr key={internship.internship_id}>
                 <td>{(page - 1) * limit + index + 1}</td>
 
+                <td>{internship.title}</td>
+
+                <td>{internship.company_name || "—"}</td>
+
+                <td>{internship.location || "—"}</td>
+
+                <td>{internship.stipend || "—"}</td>
+
+                <td>{internship.duration || "—"}</td>
+
+                <td>{internship.internship_type || "—"}</td>
+
+                <td>{internship.total_applications ?? 0}</td>
+
+                <td>{internship.status}</td>
+
                 <td>
-                  <span>{user.full_name?.charAt(0).toUpperCase()}</span>
-                  <span>{user.full_name}</span>
-                </td>
-
-                <td>{user.email}</td>
-
-                <td>{user.phone || "—"}</td>
-
-                <td>{user.degree || "—"}</td>
-
-                <td>{user.university || "—"}</td>
-
-                <td>{user.role_name?.replace(/_/g, " ")}</td>
-
-                <td>{user.status}</td>
-
-                <td>
-                  {new Date(user.created_at).toLocaleDateString("en-IN", {
+                  {new Date(internship.created_at).toLocaleDateString("en-IN", {
                     day: "2-digit", month: "short", year: "numeric",
                   })}
                 </td>
@@ -123,7 +122,7 @@ function Users() {
       {totalPages > 1 && (
         <div>
           <span>
-            Showing {(page - 1) * limit + 1}–{Math.min(page * limit, total)} of {total} users
+            Showing {(page - 1) * limit + 1}–{Math.min(page * limit, total)} of {total} internships
           </span>
           <div>
             <button
@@ -134,12 +133,7 @@ function Users() {
             </button>
 
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-              <button
-                key={p}
-                onClick={() => setPage(p)}
-              >
-                {p}
-              </button>
+              <button key={p} onClick={() => setPage(p)}>{p}</button>
             ))}
 
             <button
@@ -155,4 +149,4 @@ function Users() {
   );
 }
 
-export default Users;
+export default Internships;
