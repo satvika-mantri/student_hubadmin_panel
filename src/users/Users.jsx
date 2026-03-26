@@ -11,36 +11,24 @@ function Users() {
   const [loading, setLoading] = useState(false);
   const limit = 10;
 
-  // FORM STATE
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
     full_name: "",
     email: "",
     password: "",
+    confirm_password: "",
     phone: "",
-    degree: "",
-    university: "",
-    role_id: ""
+    age: ""
   });
 
-  const [roles, setRoles] = useState([]);
   const [formLoading, setFormLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
-  // FETCH USERS
+  // ================= FETCH USERS =================
   useEffect(() => {
     fetchUsers();
   }, [page, search]);
-
-  // FETCH ROLES
-  useEffect(() => {
-    fetch("https://studenthub-backend-woad.vercel.app/api/roles")
-      .then(res => res.json())
-      .then(json => {
-        if (json.success) setRoles(json.data);
-      });
-  }, []);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -49,6 +37,7 @@ function Users() {
         `https://studenthub-backend-woad.vercel.app/api/bulk?type=users&page=${page}&limit=${limit}&search=${search}`
       );
       const json = await res.json();
+
       if (json.success) {
         setUsers(json.data);
         setTotal(json.total);
@@ -61,17 +50,17 @@ function Users() {
     }
   };
 
-  // INPUT CHANGE
+  // ================= INPUT =================
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  // SUBMIT
+  // ================= SUBMIT =================
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!form.role_id) {
-      setError("Please select a role");
+    if (form.password !== form.confirm_password) {
+      setError("Passwords do not match");
       return;
     }
 
@@ -86,8 +75,12 @@ function Users() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            ...form,
-            role_id: parseInt(form.role_id)
+            full_name: form.full_name,
+            email: form.email,
+            password: form.password,
+            phone: form.phone,
+            age: parseInt(form.age),
+            role_id: 1   // ADMIN
           })
         }
       );
@@ -95,7 +88,7 @@ function Users() {
       const json = await res.json();
 
       if (json.success) {
-        setSuccess("User created successfully");
+        setSuccess("Admin created successfully");
         setShowForm(false);
         fetchUsers();
 
@@ -103,22 +96,23 @@ function Users() {
           full_name: "",
           email: "",
           password: "",
+          confirm_password: "",
           phone: "",
-          degree: "",
-          university: "",
-          role_id: ""
+          age: ""
         });
       } else {
         setError(json.message);
       }
-    } catch {
+
+    } catch (err) {
+      console.error(err);
       setError("Server error");
     } finally {
       setFormLoading(false);
     }
   };
 
-  // SEARCH
+  // ================= SEARCH =================
   const handleSearch = (e) => {
     e.preventDefault();
     setPage(1);
@@ -148,16 +142,16 @@ function Users() {
             setSuccess(null);
           }}
         >
-          {showForm ? "Cancel" : "+ Add User"}
+          {showForm ? "Cancel" : "+ Add Admin"}
         </button>
       </div>
 
-      {/* FORM */}
+      {/* ================= FORM ================= */}
       {showForm && (
         <div className="form-container">
           <form onSubmit={handleSubmit}>
 
-            <h2 className="form-title">Create User</h2>
+            <h2 className="form-title">Create Admin</h2>
 
             {error && <p style={{ color: "red" }}>{error}</p>}
             {success && <p style={{ color: "green" }}>{success}</p>}
@@ -178,30 +172,18 @@ function Users() {
             </div>
 
             <div className="form-group">
+              <label>Confirm Password</label>
+              <input type="password" name="confirm_password" value={form.confirm_password} onChange={handleChange} required />
+            </div>
+
+            <div className="form-group">
               <label>Phone</label>
               <input name="phone" value={form.phone} onChange={handleChange} />
             </div>
 
             <div className="form-group">
-              <label>Degree</label>
-              <input name="degree" value={form.degree} onChange={handleChange} />
-            </div>
-
-            <div className="form-group">
-              <label>University</label>
-              <input name="university" value={form.university} onChange={handleChange} />
-            </div>
-
-            <div className="form-group">
-              <label>Role</label>
-              <select name="role_id" value={form.role_id} onChange={handleChange} required>
-                <option value="">Select Role</option>
-                {roles.map((r) => (
-                  <option key={r.role_id} value={r.role_id}>
-                    {r.role_name}
-                  </option>
-                ))}
-              </select>
+              <label>Age</label>
+              <input type="number" name="age" value={form.age} onChange={handleChange} required />
             </div>
 
             <div className="form-actions">
@@ -213,10 +195,9 @@ function Users() {
                     full_name: "",
                     email: "",
                     password: "",
+                    confirm_password: "",
                     phone: "",
-                    degree: "",
-                    university: "",
-                    role_id: ""
+                    age: ""
                   })
                 }
               >
@@ -224,7 +205,7 @@ function Users() {
               </button>
 
               <button className="btn btn-primary" disabled={formLoading}>
-                {formLoading ? "Creating..." : "Create User"}
+                {formLoading ? "Creating..." : "Create Admin"}
               </button>
             </div>
 
@@ -232,7 +213,7 @@ function Users() {
         </div>
       )}
 
-      {/* SEARCH */}
+      {/* ================= SEARCH ================= */}
       <form onSubmit={handleSearch}>
         <input
           value={searchInput}
@@ -243,11 +224,11 @@ function Users() {
         {search && <button onClick={handleClear}>Clear</button>}
       </form>
 
-      {/* TABLE */}
+      {/* ================= TABLE ================= */}
       <table>
         <thead>
           <tr>
-            {["#", "Name", "Email", "Phone", "Degree", "University", "Role", "Status", "Joined"].map((h) => (
+            {["#", "Name", "Email", "Phone", "Role", "Status", "Joined"].map((h) => (
               <th key={h}>{h}</th>
             ))}
           </tr>
@@ -255,15 +236,13 @@ function Users() {
 
         <tbody>
           {loading ? (
-            <tr><td colSpan={9}>Loading...</td></tr>
+            <tr><td colSpan={7}>Loading...</td></tr>
           ) : users.map((user, index) => (
             <tr key={user.user_id}>
               <td>{(page - 1) * limit + index + 1}</td>
               <td>{user.full_name}</td>
               <td>{user.email}</td>
               <td>{user.phone}</td>
-              <td>{user.degree}</td>
-              <td>{user.university}</td>
               <td>{user.role_name}</td>
               <td>{user.status}</td>
               <td>{new Date(user.created_at).toLocaleDateString()}</td>

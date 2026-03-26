@@ -1,6 +1,21 @@
 import { useState, useEffect } from "react";
 import "../assets/form.css";
 
+// 🔥 Salary Formatter
+const formatSalary = (amount) => {
+  if (!amount) return "—";
+
+  if (amount >= 100000) {
+    return (amount / 100000).toFixed(1).replace(".0", "") + "L";
+  }
+
+  if (amount >= 1000) {
+    return (amount / 1000).toFixed(0) + "K";
+  }
+
+  return amount;
+};
+
 function Jobs() {
   const [jobs, setJobs] = useState([]);
   const [page, setPage] = useState(1);
@@ -11,16 +26,17 @@ function Jobs() {
   const [loading, setLoading] = useState(false);
   const limit = 10;
 
-  // FORM STATE
+  // FORM
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
     title: "",
     company_id: "",
     location: "",
+    job_type: "",
+    experience_level: "",
     salary_min: "",
     salary_max: "",
-    experience_level: "",
-    description: "",
+    description: ""
   });
 
   const [companies, setCompanies] = useState([]);
@@ -36,8 +52,8 @@ function Jobs() {
   // FETCH COMPANIES
   useEffect(() => {
     fetch("https://studenthub-backend-woad.vercel.app/api/companies")
-      .then((res) => res.json())
-      .then((json) => {
+      .then(res => res.json())
+      .then(json => {
         if (json.success) setCompanies(json.data);
       });
   }, []);
@@ -61,12 +77,12 @@ function Jobs() {
     }
   };
 
-  // INPUT HANDLER
+  // INPUT
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  // SUBMIT JOB
+  // SUBMIT
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -79,23 +95,22 @@ function Jobs() {
     setError(null);
     setSuccess(null);
 
-    const payload = {
-      title: form.title,
-      company_id: parseInt(form.company_id),
-      location: form.location,
-      salary_min: form.salary_min ? parseInt(form.salary_min) : null,
-      salary_max: form.salary_max ? parseInt(form.salary_max) : null,
-      experience_level: form.experience_level,
-      description: form.description,
-    };
-
     try {
       const res = await fetch(
         "https://studenthub-backend-woad.vercel.app/api/jobs",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          body: JSON.stringify({
+            title: form.title,
+            company_id: parseInt(form.company_id),
+            location: form.location,
+            job_type: form.job_type,
+            experience_level: form.experience_level,
+            salary_min: form.salary_min ? parseInt(form.salary_min) : null,
+            salary_max: form.salary_max ? parseInt(form.salary_max) : null,
+            description: form.description
+          })
         }
       );
 
@@ -105,18 +120,21 @@ function Jobs() {
         setSuccess("Job created successfully");
         setShowForm(false);
         fetchJobs();
+
         setForm({
           title: "",
           company_id: "",
           location: "",
+          job_type: "",
+          experience_level: "",
           salary_min: "",
           salary_max: "",
-          experience_level: "",
-          description: "",
+          description: ""
         });
       } else {
         setError(json.message);
       }
+
     } catch {
       setError("Server error");
     } finally {
@@ -191,18 +209,23 @@ function Jobs() {
             </div>
 
             <div className="form-group">
-              <label>Salary Min</label>
-              <input name="salary_min" value={form.salary_min} onChange={handleChange} />
-            </div>
-
-            <div className="form-group">
-              <label>Salary Max</label>
-              <input name="salary_max" value={form.salary_max} onChange={handleChange} />
+              <label>Job Type</label>
+              <input name="job_type" value={form.job_type} onChange={handleChange} />
             </div>
 
             <div className="form-group">
               <label>Experience</label>
               <input name="experience_level" value={form.experience_level} onChange={handleChange} />
+            </div>
+
+            <div className="form-group">
+              <label>Salary Min</label>
+              <input type="number" name="salary_min" value={form.salary_min} onChange={handleChange} />
+            </div>
+
+            <div className="form-group">
+              <label>Salary Max</label>
+              <input type="number" name="salary_max" value={form.salary_max} onChange={handleChange} />
             </div>
 
             <div className="form-group">
@@ -219,10 +242,11 @@ function Jobs() {
                     title: "",
                     company_id: "",
                     location: "",
+                    job_type: "",
+                    experience_level: "",
                     salary_min: "",
                     salary_max: "",
-                    experience_level: "",
-                    description: "",
+                    description: ""
                   })
                 }
               >
@@ -268,7 +292,16 @@ function Jobs() {
               <td>{job.title}</td>
               <td>{job.company_name}</td>
               <td>{job.location}</td>
-              <td>{job.salary_min} - {job.salary_max}</td>
+
+              {/* 🔥 FORMATTED SALARY */}
+              <td>
+                {job.salary_min && job.salary_max
+                  ? `₹${formatSalary(job.salary_min)} – ₹${formatSalary(job.salary_max)}`
+                  : job.salary_min
+                  ? `₹${formatSalary(job.salary_min)}+`
+                  : "—"}
+              </td>
+
               <td>{job.job_type}</td>
               <td>{job.experience_level}</td>
               <td>{job.total_applications}</td>
