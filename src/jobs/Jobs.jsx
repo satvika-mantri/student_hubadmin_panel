@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import "../assets/form.css";
 
-const API_BASE = process.env.REACT_APP_API_URL;
+const API_BASE = import.meta.env.VITE_API_URL;
 
 // 🔥 Salary Formatter
 const formatSalary = (amount) => {
@@ -28,7 +28,7 @@ function Jobs() {
   const [loading, setLoading] = useState(false);
   const limit = 10;
 
-  
+
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
     title: "",
