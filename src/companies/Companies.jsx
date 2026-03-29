@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import "../assets/form.css";
 
+const API_BASE = process.env.REACT_APP_API_URL;
+
 function Companies() {
   const [companies, setCompanies] = useState([]);
   const [page, setPage] = useState(1);
@@ -25,7 +27,7 @@ function Companies() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
-  // FETCH
+  // ================= FETCH =================
   useEffect(() => {
     fetchCompanies();
   }, [page, search]);
@@ -34,27 +36,37 @@ function Companies() {
     setLoading(true);
     try {
       const res = await fetch(
-        `https://studenthub-backend-woad.vercel.app/api/bulk?type=companies&page=${page}&limit=${limit}&search=${search}`
+        `${API_BASE}/api/bulk?type=companies&page=${page}&limit=${limit}&search=${search}`,
+        {
+          method: "GET",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
       );
+
       const json = await res.json();
+
       if (json.success) {
         setCompanies(json.data);
         setTotal(json.total);
         setTotalPages(json.totalPages);
       }
+
     } catch (err) {
-      console.error(err);
+      console.error("Fetch companies error:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  // INPUT CHANGE
+  // ================= INPUT =================
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  // SUBMIT
+  // ================= SUBMIT =================
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -63,14 +75,14 @@ function Companies() {
     setSuccess(null);
 
     try {
-      const res = await fetch(
-        "https://studenthub-backend-woad.vercel.app/api/companies",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form),
-        }
-      );
+      const res = await fetch(`${API_BASE}/api/companies`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(form),
+      });
 
       const json = await res.json();
 
@@ -89,14 +101,16 @@ function Companies() {
       } else {
         setError(json.message);
       }
-    } catch {
+
+    } catch (err) {
+      console.error("Create company error:", err);
       setError("Server error");
     } finally {
       setFormLoading(false);
     }
   };
 
-  // SEARCH
+  // ================= SEARCH =================
   const handleSearch = (e) => {
     e.preventDefault();
     setPage(1);
@@ -218,24 +232,22 @@ function Companies() {
           ) : companies.map((company, index) => (
             <tr key={company.company_id}>
               <td>{(page - 1) * limit + index + 1}</td>
-
+  
               <td>{company.name}</td>
+  
 
               <td>{company.industry || "—"}</td>
-
+ 
+ 
               <td>{company.location || "—"}</td>
-
               <td>
                 {company.website
                   ? <a href={company.website} target="_blank" rel="noreferrer">{company.website}</a>
                   : "—"}
               </td>
-
+ 
               <td>{company.status}</td>
-
-              <td>
-                {new Date(company.created_at).toLocaleDateString()}
-              </td>
+              <td>{new Date(company.created_at).toLocaleDateString()}</td>
             </tr>
           ))}
         </tbody>

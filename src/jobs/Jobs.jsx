@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import "../assets/form.css";
 
+const API_BASE = process.env.REACT_APP_API_URL;
+
 // 🔥 Salary Formatter
 const formatSalary = (amount) => {
   if (!amount) return "—";
@@ -26,7 +28,7 @@ function Jobs() {
   const [loading, setLoading] = useState(false);
   const limit = 10;
 
-  // FORM
+  
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
     title: "",
@@ -44,45 +46,69 @@ function Jobs() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
-  // FETCH JOBS
+  // ================= FETCH JOBS =================
   useEffect(() => {
     fetchJobs();
   }, [page, search]);
 
-  // FETCH COMPANIES
+  // ================= FETCH COMPANIES =================
   useEffect(() => {
-    fetch("https://studenthub-backend-woad.vercel.app/api/companies")
-      .then(res => res.json())
-      .then(json => {
-        if (json.success) setCompanies(json.data);
-      });
+    fetchCompanies();
   }, []);
+
+  const fetchCompanies = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/companies`, {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      const json = await res.json();
+      if (json.success) setCompanies(json.data);
+
+    } catch (err) {
+      console.error("Fetch companies error:", err);
+    }
+  };
 
   const fetchJobs = async () => {
     setLoading(true);
     try {
       const res = await fetch(
-        `https://studenthub-backend-woad.vercel.app/api/bulk?type=jobs&page=${page}&limit=${limit}&search=${search}`
+        `${API_BASE}/api/bulk?type=jobs&page=${page}&limit=${limit}&search=${search}`,
+        {
+          method: "GET",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
       );
+
       const json = await res.json();
+
       if (json.success) {
         setJobs(json.data);
         setTotal(json.total);
         setTotalPages(json.totalPages);
       }
+
     } catch (err) {
-      console.error(err);
+      console.error("Fetch jobs error:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  // INPUT
+  // ================= INPUT =================
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  // SUBMIT
+  // ================= SUBMIT =================
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -96,23 +122,23 @@ function Jobs() {
     setSuccess(null);
 
     try {
-      const res = await fetch(
-        "https://studenthub-backend-woad.vercel.app/api/jobs",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            title: form.title,
-            company_id: parseInt(form.company_id),
-            location: form.location,
-            job_type: form.job_type,
-            experience_level: form.experience_level,
-            salary_min: form.salary_min ? parseInt(form.salary_min) : null,
-            salary_max: form.salary_max ? parseInt(form.salary_max) : null,
-            description: form.description
-          })
-        }
-      );
+      const res = await fetch(`${API_BASE}/api/jobs`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: form.title,
+          company_id: parseInt(form.company_id),
+          location: form.location,
+          job_type: form.job_type,
+          experience_level: form.experience_level,
+          salary_min: form.salary_min ? parseInt(form.salary_min) : null,
+          salary_max: form.salary_max ? parseInt(form.salary_max) : null,
+          description: form.description
+        })
+      });
 
       const json = await res.json();
 
@@ -135,14 +161,15 @@ function Jobs() {
         setError(json.message);
       }
 
-    } catch {
+    } catch (err) {
+      console.error("Create job error:", err);
       setError("Server error");
     } finally {
       setFormLoading(false);
     }
   };
 
-  // SEARCH
+  // ================= SEARCH =================
   const handleSearch = (e) => {
     e.preventDefault();
     setPage(1);
@@ -234,22 +261,18 @@ function Jobs() {
             </div>
 
             <div className="form-actions">
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() =>
-                  setForm({
-                    title: "",
-                    company_id: "",
-                    location: "",
-                    job_type: "",
-                    experience_level: "",
-                    salary_min: "",
-                    salary_max: "",
-                    description: ""
-                  })
-                }
-              >
+              <button type="button" className="btn btn-secondary" onClick={() =>
+                setForm({
+                  title: "",
+                  company_id: "",
+                  location: "",
+                  job_type: "",
+                  experience_level: "",
+                  salary_min: "",
+                  salary_max: "",
+                  description: ""
+                })
+              }>
                 Reset
               </button>
 
@@ -293,7 +316,7 @@ function Jobs() {
               <td>{job.company_name}</td>
               <td>{job.location}</td>
 
-              {/* 🔥 FORMATTED SALARY */}
+
               <td>
                 {job.salary_min && job.salary_max
                   ? `₹${formatSalary(job.salary_min)} – ₹${formatSalary(job.salary_max)}`

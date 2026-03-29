@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import "../assets/form.css";
 
+const API_BASE = process.env.REACT_APP_API_URL;
+
 const initialForm = {
   title: "",
   company_id: "",
@@ -29,43 +31,83 @@ function Internships() {
   const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
 
+  // ================= FETCH INTERNSHIPS =================
   useEffect(() => {
     fetchInternships();
   }, [page, search]);
 
+  // ================= FETCH COMPANIES + SKILLS =================
   useEffect(() => {
-    fetch("https://studenthub-backend-woad.vercel.app/api/companies")
-      .then((r) => r.json())
-      .then((json) => {
-        if (json.success) setCompanies(json.data);
+    fetchCompanies();
+    fetchSkills();
+  }, []);
+
+  const fetchCompanies = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/companies`, {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
       });
 
-    fetch("https://studenthub-backend-woad.vercel.app/api/skills")
-      .then((r) => r.json())
-      .then((json) => {
-        if (json.skills) setSkills(json.skills);
+      const json = await res.json();
+      if (json.success) setCompanies(json.data);
+
+    } catch (err) {
+      console.error("Fetch companies error:", err);
+    }
+  };
+
+  const fetchSkills = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/skills`, {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
       });
-  }, []);
+
+      const json = await res.json();
+      if (json.skills) setSkills(json.skills);
+
+    } catch (err) {
+      console.error("Fetch skills error:", err);
+    }
+  };
 
   const fetchInternships = async () => {
     setLoading(true);
     try {
       const res = await fetch(
-        `https://studenthub-backend-woad.vercel.app/api/bulk?type=internships&page=${page}&limit=${limit}&search=${search}`
+        `${API_BASE}/api/bulk?type=internships&page=${page}&limit=${limit}&search=${search}`,
+        {
+          method: "GET",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
       );
+
       const json = await res.json();
+
       if (json.success) {
         setInternships(json.data);
         setTotal(json.total);
         setTotalPages(json.totalPages);
       }
+
     } catch (err) {
-      console.error(err);
+      console.error("Fetch internships error:", err);
     } finally {
       setLoading(false);
     }
   };
 
+  // ================= FORM HANDLING =================
   const handleSearch = (e) => {
     e.preventDefault();
     setPage(1);
@@ -89,6 +131,7 @@ function Internships() {
     setForm((prev) => ({ ...prev, skill_ids: selected }));
   };
 
+  // ================= SUBMIT =================
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -112,14 +155,14 @@ function Internships() {
     };
 
     try {
-      const res = await fetch(
-        "https://studenthub-backend-woad.vercel.app/api/internships",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        }
-      );
+      const res = await fetch(`${API_BASE}/api/internships`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
 
       const json = await res.json();
 
@@ -131,7 +174,9 @@ function Internships() {
       } else {
         setError(json.message);
       }
-    } catch {
+
+    } catch (err) {
+      console.error("Create internship error:", err);
       setError("Server error");
     } finally {
       setFormLoading(false);
@@ -223,19 +268,11 @@ function Internships() {
             </div>
 
             <div className="form-actions">
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => setForm(initialForm)}
-              >
+              <button type="button" className="btn btn-secondary" onClick={() => setForm(initialForm)}>
                 Reset
               </button>
 
-              <button
-                type="submit"
-                className="btn btn-primary"
-                disabled={formLoading}
-              >
+              <button type="submit" className="btn btn-primary" disabled={formLoading}>
                 {formLoading ? "Creating..." : "Create Internship"}
               </button>
             </div>
@@ -270,7 +307,7 @@ function Internships() {
             <tr><td colSpan={7}>Loading...</td></tr>
           ) : internships.map((i, index) => (
             <tr key={i.internship_id}>
-              <td>{index + 1}</td>
+              <td>{(page - 1) * limit + index + 1}</td>
               <td>{i.title}</td>
               <td>{i.company_name}</td>
               <td>{i.location}</td>

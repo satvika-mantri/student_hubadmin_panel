@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import "../assets/form.css";
 
+const API_BASE = process.env.REACT_APP_API_URL;
+
 function Users() {
   const [users, setUsers] = useState([]);
   const [page, setPage] = useState(1);
@@ -34,8 +36,16 @@ function Users() {
     setLoading(true);
     try {
       const res = await fetch(
-        `https://studenthub-backend-woad.vercel.app/api/bulk?type=users&page=${page}&limit=${limit}&search=${search}`
+        `${API_BASE}/api/bulk?type=users&page=${page}&limit=${limit}&search=${search}`,
+        {
+          method: "GET",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
       );
+
       const json = await res.json();
 
       if (json.success) {
@@ -44,7 +54,7 @@ function Users() {
         setTotalPages(json.totalPages);
       }
     } catch (err) {
-      console.error(err);
+      console.error("Fetch users error:", err);
     } finally {
       setLoading(false);
     }
@@ -70,18 +80,21 @@ function Users() {
 
     try {
       const res = await fetch(
-        "https://studenthub-backend-woad.vercel.app/api/auth/register",
+        `${API_BASE}/api/auth/register`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
           body: JSON.stringify({
             full_name: form.full_name,
             email: form.email,
             password: form.password,
             phone: form.phone,
             age: parseInt(form.age),
-            role_id: 1   // ADMIN
-          })
+            role_id: 1 // ADMIN
+          }),
         }
       );
 
@@ -105,7 +118,7 @@ function Users() {
       }
 
     } catch (err) {
-      console.error(err);
+      console.error("Create user error:", err);
       setError("Server error");
     } finally {
       setFormLoading(false);
@@ -146,7 +159,7 @@ function Users() {
         </button>
       </div>
 
-      {/* ================= FORM ================= */}
+      {/* FORM */}
       {showForm && (
         <div className="form-container">
           <form onSubmit={handleSubmit}>
@@ -213,7 +226,7 @@ function Users() {
         </div>
       )}
 
-      {/* ================= SEARCH ================= */}
+      {/* SEARCH */}
       <form onSubmit={handleSearch}>
         <input
           value={searchInput}
@@ -224,7 +237,7 @@ function Users() {
         {search && <button onClick={handleClear}>Clear</button>}
       </form>
 
-      {/* ================= TABLE ================= */}
+      {/* TABLE */}
       <table>
         <thead>
           <tr>
