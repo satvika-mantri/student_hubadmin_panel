@@ -6,65 +6,34 @@ import Jobs from "./jobs/Jobs";
 import Nav from "./nav/Nav";
 import Login from "./login/Login";
 
-// ✅ check login
-const isLoggedIn = () => {
-  return localStorage.getItem("token");
-};
+const isLoggedIn = () => localStorage.getItem("token");
 
-// ✅ protect routes
 const ProtectedRoute = ({ children }) => {
   return isLoggedIn() ? children : <Navigate to="/login" />;
 };
 
 export default function App() {
   const location = useLocation();
+  const isLoginPage = location.pathname === "/login";
+
+  if (isLoginPage) {
+    return <Login />;
+  }
 
   return (
-    <>
-      {/* ✅ Hide navbar on login page */}
-      {location.pathname !== "/login" && <Nav />}
+    <div className="layout">
 
-      <Routes>
-        {/* 🔐 Login Route */}
-        <Route path="/login" element={<Login />} />
+      <Nav />
 
-        {/* 🔒 Protected Routes */}
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <Users />
-            </ProtectedRoute>
-          }
-        />
+      <div className="main-content">
+        <Routes>
+          <Route path="/" element={<ProtectedRoute><Users /></ProtectedRoute>} />
+          <Route path="/companies" element={<ProtectedRoute><Companies /></ProtectedRoute>} />
+          <Route path="/internships" element={<ProtectedRoute><Internships /></ProtectedRoute>} />
+          <Route path="/jobs" element={<ProtectedRoute><Jobs /></ProtectedRoute>} />
+        </Routes>
+      </div>
 
-        <Route
-          path="/companies"
-          element={
-            <ProtectedRoute>
-              <Companies />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/internships"
-          element={
-            <ProtectedRoute>
-              <Internships />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/jobs"
-          element={
-            <ProtectedRoute>
-              <Jobs />
-            </ProtectedRoute>
-          }
-        />
-      </Routes>
-    </>
+    </div>
   );
 }

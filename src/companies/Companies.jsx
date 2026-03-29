@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import "../assets/form.css";
 
-const API_BASE = import.meta.env.VITE_API_URL;
+const API_BASE = "https://studenthub-backend-woad.vercel.app";
 
 function Companies() {
   const [companies, setCompanies] = useState([]);
@@ -13,7 +13,6 @@ function Companies() {
   const [loading, setLoading] = useState(false);
   const limit = 10;
 
-  // FORM STATE
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
     name: "",
@@ -32,16 +31,17 @@ function Companies() {
     fetchCompanies();
   }, [page, search]);
 
+  // ✅ FIX 1: Add Authorization
   const fetchCompanies = async () => {
     setLoading(true);
     try {
+      const token = localStorage.getItem("token");
+
       const res = await fetch(
         `${API_BASE}/api/bulk?type=companies&page=${page}&limit=${limit}&search=${search}`,
         {
-          method: "GET",
-          credentials: "include",
           headers: {
-            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
         }
       );
@@ -75,11 +75,13 @@ function Companies() {
     setSuccess(null);
 
     try {
+      const token = localStorage.getItem("token");
+
       const res = await fetch(`${API_BASE}/api/companies`, {
         method: "POST",
-        credentials: "include",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`, // ✅ FIX 2
         },
         body: JSON.stringify(form),
       });
@@ -125,129 +127,47 @@ function Companies() {
   return (
     <div style={{ padding: "20px" }}>
 
-      {/* HEADER */}
-      <div style={{ display: "flex", justifyContent: "space-between" }}>
-        <div>
-          <h1>{total} Companies</h1>
-          <p>Total {total} registered companies</p>
-        </div>
+      <h1>{total} Companies</h1>
 
-        <button
-          className="btn btn-primary"
-          onClick={() => {
-            setShowForm(!showForm);
-            setError(null);
-            setSuccess(null);
-          }}
-        >
-          {showForm ? "Cancel" : "+ Add Company"}
-        </button>
-      </div>
+      <button onClick={() => setShowForm(!showForm)}>
+        {showForm ? "Cancel" : "+ Add Company"}
+      </button>
 
-      {/* FORM */}
       {showForm && (
-        <div className="form-container">
-          <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit}>
+          <input name="name" placeholder="Name" value={form.name} onChange={handleChange} required />
+          <input name="industry" placeholder="Industry" value={form.industry} onChange={handleChange} />
+          <input name="location" placeholder="Location" value={form.location} onChange={handleChange} />
+          <input name="website" placeholder="Website" value={form.website} onChange={handleChange} />
+          <textarea name="description" placeholder="Description" value={form.description} onChange={handleChange} />
 
-            <h2 className="form-title">Create Company</h2>
-
-            {error && <p style={{ color: "red" }}>{error}</p>}
-            {success && <p style={{ color: "green" }}>{success}</p>}
-
-            <div className="form-group">
-              <label>Name</label>
-              <input name="name" value={form.name} onChange={handleChange} required />
-            </div>
-
-            <div className="form-group">
-              <label>Industry</label>
-              <input name="industry" value={form.industry} onChange={handleChange} />
-            </div>
-
-            <div className="form-group">
-              <label>Location</label>
-              <input name="location" value={form.location} onChange={handleChange} />
-            </div>
-
-            <div className="form-group">
-              <label>Website</label>
-              <input name="website" value={form.website} onChange={handleChange} />
-            </div>
-
-            <div className="form-group">
-              <label>Description</label>
-              <textarea name="description" value={form.description} onChange={handleChange} />
-            </div>
-
-            <div className="form-actions">
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() =>
-                  setForm({
-                    name: "",
-                    industry: "",
-                    location: "",
-                    website: "",
-                    description: "",
-                  })
-                }
-              >
-                Reset
-              </button>
-
-              <button className="btn btn-primary" disabled={formLoading}>
-                {formLoading ? "Creating..." : "Create Company"}
-              </button>
-            </div>
-
-          </form>
-        </div>
+          <button disabled={formLoading}>
+            {formLoading ? "Creating..." : "Create Company"}
+          </button>
+        </form>
       )}
 
-      {/* SEARCH */}
       <form onSubmit={handleSearch}>
-        <input
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-          placeholder="Search..."
-        />
+        <input value={searchInput} onChange={(e) => setSearchInput(e.target.value)} />
         <button type="submit">Search</button>
-        {search && <button onClick={handleClear}>Clear</button>}
       </form>
 
-      {/* TABLE */}
       <table>
         <thead>
           <tr>
-            {["#", "Name", "Industry", "Location", "Website", "Status", "Joined"].map((h) => (
-              <th key={h}>{h}</th>
-            ))}
+            <th>#</th><th>Name</th><th>Industry</th><th>Location</th><th>Website</th>
           </tr>
         </thead>
-
         <tbody>
           {loading ? (
-            <tr><td colSpan={7}>Loading...</td></tr>
-          ) : companies.map((company, index) => (
-            <tr key={company.company_id}>
-              <td>{(page - 1) * limit + index + 1}</td>
-  
-              <td>{company.name}</td>
-  
-
-              <td>{company.industry || "—"}</td>
- 
- 
-              <td>{company.location || "—"}</td>
-              <td>
-                {company.website
-                  ? <a href={company.website} target="_blank" rel="noreferrer">{company.website}</a>
-                  : "—"}
-              </td>
- 
-              <td>{company.status}</td>
-              <td>{new Date(company.created_at).toLocaleDateString()}</td>
+            <tr><td colSpan={5}>Loading...</td></tr>
+          ) : companies.map((c, i) => (
+            <tr key={c.company_id}>
+              <td>{(page - 1) * limit + i + 1}</td>
+              <td>{c.name}</td>
+              <td>{c.industry}</td>
+              <td>{c.location}</td>
+              <td>{c.website}</td>
             </tr>
           ))}
         </tbody>

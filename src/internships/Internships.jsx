@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import "../assets/form.css";
 
-const API_BASE = import.meta.env.VITE_API_URL;
+const API_BASE = "https://studenthub-backend-woad.vercel.app";
 
 const initialForm = {
   title: "",
@@ -42,15 +42,19 @@ function Internships() {
     fetchSkills();
   }, []);
 
+  // ✅ FIX 1: Correct companies API + auth
   const fetchCompanies = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/companies`, {
-        method: "GET",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      const token = localStorage.getItem("token");
+
+      const res = await fetch(
+        `${API_BASE}/api/bulk?type=companies&page=1&limit=100`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       const json = await res.json();
       if (json.success) setCompanies(json.data);
@@ -60,13 +64,14 @@ function Internships() {
     }
   };
 
+  // ✅ FIX 2: Add auth to skills fetch
   const fetchSkills = async () => {
     try {
+      const token = localStorage.getItem("token");
+
       const res = await fetch(`${API_BASE}/api/skills`, {
-        method: "GET",
-        credentials: "include",
         headers: {
-          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
       });
 
@@ -78,16 +83,17 @@ function Internships() {
     }
   };
 
+  // ✅ FIX 3: Add auth to internships fetch
   const fetchInternships = async () => {
     setLoading(true);
     try {
+      const token = localStorage.getItem("token");
+
       const res = await fetch(
         `${API_BASE}/api/bulk?type=internships&page=${page}&limit=${limit}&search=${search}`,
         {
-          method: "GET",
-          credentials: "include",
           headers: {
-            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
         }
       );
@@ -107,7 +113,7 @@ function Internships() {
     }
   };
 
-  // ================= FORM HANDLING =================
+  // ================= FORM =================
   const handleSearch = (e) => {
     e.preventDefault();
     setPage(1);
@@ -144,24 +150,24 @@ function Internships() {
     setSuccess(null);
     setError(null);
 
-    const payload = {
-      title: form.title,
-      company_id: parseInt(form.company_id),
-      location: form.location,
-      duration: form.duration,
-      stipend: form.stipend,
-      description: form.description,
-      skill_ids: form.skill_ids,
-    };
-
     try {
+      const token = localStorage.getItem("token");
+
       const res = await fetch(`${API_BASE}/api/internships`, {
         method: "POST",
-        credentials: "include",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          title: form.title,
+          company_id: parseInt(form.company_id),
+          location: form.location,
+          duration: form.duration,
+          stipend: form.stipend,
+          description: form.description,
+          skill_ids: form.skill_ids,
+        }),
       });
 
       const json = await res.json();
@@ -186,134 +192,58 @@ function Internships() {
   return (
     <div style={{ padding: "20px" }}>
 
-      {/* HEADER */}
-      <div style={{
-        display: "flex",
-        justifyContent: "space-between",
-        marginBottom: "20px"
-      }}>
-        <div>
-          <h1>{total} Internships</h1>
-          <p>Total {total} internship listings</p>
-        </div>
+      <h1>{total} Internships</h1>
 
-        <button
-          className="btn btn-primary"
-          onClick={() => {
-            setShowForm(!showForm);
-            setError(null);
-            setSuccess(null);
-          }}
-        >
-          {showForm ? "Cancel" : "+ Post Internship"}
-        </button>
-      </div>
+      <button onClick={() => setShowForm(!showForm)}>
+        {showForm ? "Cancel" : "+ Post Internship"}
+      </button>
 
-      {/* FORM */}
       {showForm && (
-        <div className="form-container">
-          <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit}>
+          <input name="title" value={form.title} onChange={handleChange} placeholder="Title" required />
 
-            <h2 className="form-title">New Internship</h2>
+          <select name="company_id" value={form.company_id} onChange={handleChange} required>
+            <option value="">Select Company</option>
+            {companies.map(c => (
+              <option key={c.company_id} value={c.company_id}>{c.name}</option>
+            ))}
+          </select>
 
-            {success && <p style={{ color: "#22c55e" }}>{success}</p>}
-            {error && <p style={{ color: "#ef4444" }}>{error}</p>}
+          <input name="location" value={form.location} onChange={handleChange} placeholder="Location" />
+          <input name="duration" value={form.duration} onChange={handleChange} placeholder="Duration" />
+          <input name="stipend" value={form.stipend} onChange={handleChange} placeholder="Stipend" />
 
-            <div className="form-group">
-              <label>Title *</label>
-              <input name="title" value={form.title} onChange={handleChange} required />
-            </div>
+          <textarea name="description" value={form.description} onChange={handleChange} />
 
-            <div className="form-group">
-              <label>Company *</label>
-              <select name="company_id" value={form.company_id} onChange={handleChange} required>
-                <option value="">-- Select Company --</option>
-                {companies.map((c) => (
-                  <option key={c.company_id} value={c.company_id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+          <select multiple value={form.skill_ids.map(String)} onChange={handleSkillChange}>
+            {skills.map(s => (
+              <option key={s.skill_id} value={s.skill_id}>{s.name}</option>
+            ))}
+          </select>
 
-            <div className="form-group">
-              <label>Location *</label>
-              <input name="location" value={form.location} onChange={handleChange} required />
-            </div>
-
-            <div className="form-group">
-              <label>Duration *</label>
-              <input name="duration" value={form.duration} onChange={handleChange} required />
-            </div>
-
-            <div className="form-group">
-              <label>Stipend</label>
-              <input name="stipend" value={form.stipend} onChange={handleChange} />
-            </div>
-
-            <div className="form-group">
-              <label>Description</label>
-              <textarea name="description" value={form.description} onChange={handleChange} />
-            </div>
-
-            <div className="form-group">
-              <label>Skills</label>
-              <select multiple value={form.skill_ids.map(String)} onChange={handleSkillChange}>
-                {skills.map((s) => (
-                  <option key={s.skill_id} value={s.skill_id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="form-actions">
-              <button type="button" className="btn btn-secondary" onClick={() => setForm(initialForm)}>
-                Reset
-              </button>
-
-              <button type="submit" className="btn btn-primary" disabled={formLoading}>
-                {formLoading ? "Creating..." : "Create Internship"}
-              </button>
-            </div>
-
-          </form>
-        </div>
+          <button disabled={formLoading}>
+            {formLoading ? "Creating..." : "Create Internship"}
+          </button>
+        </form>
       )}
 
-      {/* SEARCH */}
-      <form onSubmit={handleSearch} style={{ marginBottom: "20px" }}>
-        <input
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-          placeholder="Search..."
-        />
-        <button type="submit">Search</button>
-        {search && <button onClick={handleClear}>Clear</button>}
-      </form>
-
-      {/* TABLE */}
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+      <table>
         <thead>
           <tr>
-            {["#", "Title", "Company", "Location", "Stipend", "Duration", "Status"].map((h) => (
-              <th key={h}>{h}</th>
-            ))}
+            <th>#</th><th>Title</th><th>Company</th><th>Location</th><th>Stipend</th><th>Duration</th>
           </tr>
         </thead>
-
         <tbody>
           {loading ? (
-            <tr><td colSpan={7}>Loading...</td></tr>
+            <tr><td colSpan={6}>Loading...</td></tr>
           ) : internships.map((i, index) => (
             <tr key={i.internship_id}>
-              <td>{(page - 1) * limit + index + 1}</td>
+              <td>{index + 1}</td>
               <td>{i.title}</td>
               <td>{i.company_name}</td>
               <td>{i.location}</td>
               <td>{i.stipend}</td>
               <td>{i.duration}</td>
-              <td>{i.status}</td>
             </tr>
           ))}
         </tbody>

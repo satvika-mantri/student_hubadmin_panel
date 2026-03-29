@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import "../assets/form.css";
 
-const API_BASE = import.meta.env.VITE_API_URL;
+const API_BASE = "https://studenthub-backend-woad.vercel.app";
 
 // 🔥 Salary Formatter
 const formatSalary = (amount) => {
@@ -27,7 +27,6 @@ function Jobs() {
   const [searchInput, setSearchInput] = useState("");
   const [loading, setLoading] = useState(false);
   const limit = 10;
-
 
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
@@ -56,15 +55,19 @@ function Jobs() {
     fetchCompanies();
   }, []);
 
+  // ✅ FIX 1: Correct API for companies + auth
   const fetchCompanies = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/companies`, {
-        method: "GET",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      const token = localStorage.getItem("token");
+
+      const res = await fetch(
+        `${API_BASE}/api/bulk?type=companies&page=1&limit=100`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       const json = await res.json();
       if (json.success) setCompanies(json.data);
@@ -74,16 +77,17 @@ function Jobs() {
     }
   };
 
+  // ✅ FIX 2: Add Authorization header
   const fetchJobs = async () => {
     setLoading(true);
     try {
+      const token = localStorage.getItem("token");
+
       const res = await fetch(
         `${API_BASE}/api/bulk?type=jobs&page=${page}&limit=${limit}&search=${search}`,
         {
-          method: "GET",
-          credentials: "include",
           headers: {
-            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
         }
       );
@@ -122,11 +126,13 @@ function Jobs() {
     setSuccess(null);
 
     try {
+      const token = localStorage.getItem("token");
+
       const res = await fetch(`${API_BASE}/api/jobs`, {
         method: "POST",
-        credentials: "include",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`, // ✅ FIX 3
         },
         body: JSON.stringify({
           title: form.title,
@@ -207,94 +213,34 @@ function Jobs() {
       {showForm && (
         <div className="form-container">
           <form onSubmit={handleSubmit}>
-
             <h2 className="form-title">Create Job</h2>
 
             {error && <p style={{ color: "red" }}>{error}</p>}
             {success && <p style={{ color: "green" }}>{success}</p>}
 
-            <div className="form-group">
-              <label>Title</label>
-              <input name="title" value={form.title} onChange={handleChange} required />
-            </div>
+            <input name="title" placeholder="Title" value={form.title} onChange={handleChange} required />
 
-            <div className="form-group">
-              <label>Company</label>
-              <select name="company_id" value={form.company_id} onChange={handleChange} required>
-                <option value="">Select Company</option>
-                {companies.map((c) => (
-                  <option key={c.company_id} value={c.company_id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <select name="company_id" value={form.company_id} onChange={handleChange} required>
+              <option value="">Select Company</option>
+              {companies.map((c) => (
+                <option key={c.company_id} value={c.company_id}>{c.name}</option>
+              ))}
+            </select>
 
-            <div className="form-group">
-              <label>Location</label>
-              <input name="location" value={form.location} onChange={handleChange} />
-            </div>
+            <input name="location" placeholder="Location" value={form.location} onChange={handleChange} />
+            <input name="job_type" placeholder="Job Type" value={form.job_type} onChange={handleChange} />
+            <input name="experience_level" placeholder="Experience" value={form.experience_level} onChange={handleChange} />
+            <input type="number" name="salary_min" placeholder="Min Salary" value={form.salary_min} onChange={handleChange} />
+            <input type="number" name="salary_max" placeholder="Max Salary" value={form.salary_max} onChange={handleChange} />
 
-            <div className="form-group">
-              <label>Job Type</label>
-              <input name="job_type" value={form.job_type} onChange={handleChange} />
-            </div>
+            <textarea name="description" placeholder="Description" value={form.description} onChange={handleChange} />
 
-            <div className="form-group">
-              <label>Experience</label>
-              <input name="experience_level" value={form.experience_level} onChange={handleChange} />
-            </div>
-
-            <div className="form-group">
-              <label>Salary Min</label>
-              <input type="number" name="salary_min" value={form.salary_min} onChange={handleChange} />
-            </div>
-
-            <div className="form-group">
-              <label>Salary Max</label>
-              <input type="number" name="salary_max" value={form.salary_max} onChange={handleChange} />
-            </div>
-
-            <div className="form-group">
-              <label>Description</label>
-              <textarea name="description" value={form.description} onChange={handleChange} />
-            </div>
-
-            <div className="form-actions">
-              <button type="button" className="btn btn-secondary" onClick={() =>
-                setForm({
-                  title: "",
-                  company_id: "",
-                  location: "",
-                  job_type: "",
-                  experience_level: "",
-                  salary_min: "",
-                  salary_max: "",
-                  description: ""
-                })
-              }>
-                Reset
-              </button>
-
-              <button className="btn btn-primary" disabled={formLoading}>
-                {formLoading ? "Creating..." : "Create Job"}
-              </button>
-            </div>
-
+            <button disabled={formLoading}>
+              {formLoading ? "Creating..." : "Create Job"}
+            </button>
           </form>
         </div>
       )}
-
-      {/* SEARCH */}
-      <form onSubmit={handleSearch}>
-        <input
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-          placeholder="Search..."
-        />
-        <button type="submit">Search</button>
-        {search && <button onClick={handleClear}>Clear</button>}
-      </form>
 
       {/* TABLE */}
       <table>
@@ -315,8 +261,6 @@ function Jobs() {
               <td>{job.title}</td>
               <td>{job.company_name}</td>
               <td>{job.location}</td>
-
-
               <td>
                 {job.salary_min && job.salary_max
                   ? `₹${formatSalary(job.salary_min)} – ₹${formatSalary(job.salary_max)}`
@@ -324,7 +268,6 @@ function Jobs() {
                   ? `₹${formatSalary(job.salary_min)}+`
                   : "—"}
               </td>
-
               <td>{job.job_type}</td>
               <td>{job.experience_level}</td>
               <td>{job.total_applications}</td>

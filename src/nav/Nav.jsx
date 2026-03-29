@@ -2,18 +2,32 @@ import { NavLink } from "react-router-dom";
 
 function Nav() {
   return (
-    <div className="sidediv">
+    <div className="sidebar">
 
-      <div className="sidebar-brand">
-        <span>🎓</span>
-        <span>StudentHub</span>
-        <small>Admin Panel</small>
+      {/* BRAND */}
+      <div className="sidebar-header">
+        <h2>StudentHub</h2>
+        <span>Admin Panel</span>
       </div>
 
-      <NavLink to="/"            end className="navlinkside">👥 Users</NavLink>
-      <NavLink to="/companies"       className="navlinkside">🏢 Companies</NavLink>
-      <NavLink to="/internships"     className="navlinkside">📋 Internships</NavLink>
-      <NavLink to="/jobs"            className="navlinkside">💼 Jobs</NavLink>
+      {/* NAV LINKS */}
+      <div className="nav-section">
+        <NavLink to="/" end className="nav-item">
+          Users
+        </NavLink>
+
+        <NavLink to="/companies" className="nav-item">
+          Companies
+        </NavLink>
+
+        <NavLink to="/internships" className="nav-item">
+          Internships
+        </NavLink>
+
+        <NavLink to="/jobs" className="nav-item">
+          Jobs
+        </NavLink>
+      </div>
 
     </div>
   );
