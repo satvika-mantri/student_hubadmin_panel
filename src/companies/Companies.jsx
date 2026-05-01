@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import "../assets/form.css";
+import { Search, Plus, X } from "lucide-react";
 
 const API_BASE = "https://studenthub-backend-woad.vercel.app";
 
@@ -125,53 +125,91 @@ function Companies() {
   };
 
   return (
-    <div style={{ padding: "20px" }}>
+    <div>
 
-      <h1>{total} Companies</h1>
+      <div className="page-header">
+        <div>
+          <h1>Companies</h1>
+          <p>Manage {total} registered companies</p>
+        </div>
 
-      <button onClick={() => setShowForm(!showForm)}>
-        {showForm ? "Cancel" : "+ Add Company"}
-      </button>
+        <button 
+          className={showForm ? "btn btn-secondary" : "btn btn-primary"}
+          onClick={() => {
+            setShowForm(!showForm);
+            setError(null);
+            setSuccess(null);
+          }}
+        >
+          {showForm ? <><X size={16} /> Cancel</> : <><Plus size={16} /> Add Company</>}
+        </button>
+      </div>
 
       {showForm && (
-        <form onSubmit={handleSubmit}>
-          <input name="name" placeholder="Name" value={form.name} onChange={handleChange} required />
-          <input name="industry" placeholder="Industry" value={form.industry} onChange={handleChange} />
-          <input name="location" placeholder="Location" value={form.location} onChange={handleChange} />
-          <input name="website" placeholder="Website" value={form.website} onChange={handleChange} />
-          <textarea name="description" placeholder="Description" value={form.description} onChange={handleChange} />
+        <div className="form-container">
+          <form onSubmit={handleSubmit}>
+            <h2 className="form-title">Add New Company</h2>
 
-          <button disabled={formLoading}>
-            {formLoading ? "Creating..." : "Create Company"}
-          </button>
-        </form>
+            {error && <div className="message error">{error}</div>}
+            {success && <div className="message success">{success}</div>}
+
+            <div className="form-grid">
+              <input name="name" placeholder="Company Name" value={form.name} onChange={handleChange} required />
+              <input name="industry" placeholder="Industry" value={form.industry} onChange={handleChange} />
+              <input name="location" placeholder="Location" value={form.location} onChange={handleChange} />
+              <input name="website" placeholder="Website URL" value={form.website} onChange={handleChange} />
+              <textarea name="description" placeholder="Company Description" value={form.description} onChange={handleChange} />
+            </div>
+
+            <button className="btn btn-primary" disabled={formLoading}>
+              {formLoading ? "Creating..." : "Create Company"}
+            </button>
+          </form>
+        </div>
       )}
 
-      <form onSubmit={handleSearch}>
-        <input value={searchInput} onChange={(e) => setSearchInput(e.target.value)} />
-        <button type="submit">Search</button>
+      <form onSubmit={handleSearch} className="search-form">
+        <input 
+          value={searchInput} 
+          onChange={(e) => setSearchInput(e.target.value)} 
+          placeholder="Search companies..."
+        />
+        <button type="submit" className="btn btn-primary">
+          <Search size={16} /> Search
+        </button>
+        {search && (
+          <button type="button" onClick={handleClear} className="btn btn-secondary">
+            Clear
+          </button>
+        )}
       </form>
 
-      <table>
-        <thead>
-          <tr>
-            <th>#</th><th>Name</th><th>Industry</th><th>Location</th><th>Website</th>
-          </tr>
-        </thead>
-        <tbody>
-          {loading ? (
-            <tr><td colSpan={5}>Loading...</td></tr>
-          ) : companies.map((c, i) => (
-            <tr key={c.company_id}>
-              <td>{(page - 1) * limit + i + 1}</td>
-              <td>{c.name}</td>
-              <td>{c.industry}</td>
-              <td>{c.location}</td>
-              <td>{c.website}</td>
+      <div className="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th><th>Name</th><th>Industry</th><th>Location</th><th>Website</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr><td colSpan={5} style={{ textAlign: "center" }}>Loading companies...</td></tr>
+            ) : companies.length === 0 ? (
+              <tr><td colSpan={5} style={{ textAlign: "center" }}>No companies found.</td></tr>
+            ) : companies.map((c, i) => (
+              <tr key={c.company_id}>
+                <td>{(page - 1) * limit + i + 1}</td>
+                <td style={{ fontWeight: 500 }}>{c.name}</td>
+                <td>{c.industry ? <span className="badge">{c.industry}</span> : "N/A"}</td>
+                <td>{c.location || "N/A"}</td>
+                <td>
+                  {c.website ? <a href={c.website} target="_blank" rel="noreferrer">{c.website}</a> : "—"}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
     </div>
   );

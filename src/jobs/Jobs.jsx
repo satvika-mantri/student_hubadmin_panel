@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import "../assets/form.css";
+import { Search, Plus, X } from "lucide-react";
 
 const API_BASE = "https://studenthub-backend-woad.vercel.app";
 
@@ -188,24 +188,24 @@ function Jobs() {
   };
 
   return (
-    <div style={{ padding: "20px" }}>
+    <div>
 
       {/* HEADER */}
-      <div style={{ display: "flex", justifyContent: "space-between" }}>
+      <div className="page-header">
         <div>
-          <h1>{total} Jobs</h1>
-          <p>Total {total} job listings</p>
+          <h1>Jobs</h1>
+          <p>Manage over {total} job listings</p>
         </div>
 
         <button
-          className="btn btn-primary"
+          className={showForm ? "btn btn-secondary" : "btn btn-primary"}
           onClick={() => {
             setShowForm(!showForm);
             setError(null);
             setSuccess(null);
           }}
         >
-          {showForm ? "Cancel" : "+ Post Job"}
+          {showForm ? <><X size={16} /> Cancel</> : <><Plus size={16} /> Post Job</>}
         </button>
       </div>
 
@@ -215,68 +215,95 @@ function Jobs() {
           <form onSubmit={handleSubmit}>
             <h2 className="form-title">Create Job</h2>
 
-            {error && <p style={{ color: "red" }}>{error}</p>}
-            {success && <p style={{ color: "green" }}>{success}</p>}
+            {error && <div className="message error">{error}</div>}
+            {success && <div className="message success">{success}</div>}
 
-            <input name="title" placeholder="Title" value={form.title} onChange={handleChange} required />
+            <div className="form-grid">
+              <input name="title" placeholder="Job Title" value={form.title} onChange={handleChange} required />
 
-            <select name="company_id" value={form.company_id} onChange={handleChange} required>
-              <option value="">Select Company</option>
-              {companies.map((c) => (
-                <option key={c.company_id} value={c.company_id}>{c.name}</option>
-              ))}
-            </select>
+              <select name="company_id" value={form.company_id} onChange={handleChange} required>
+                <option value="">Select Company</option>
+                {companies.map((c) => (
+                  <option key={c.company_id} value={c.company_id}>{c.name}</option>
+                ))}
+              </select>
 
-            <input name="location" placeholder="Location" value={form.location} onChange={handleChange} />
-            <input name="job_type" placeholder="Job Type" value={form.job_type} onChange={handleChange} />
-            <input name="experience_level" placeholder="Experience" value={form.experience_level} onChange={handleChange} />
-            <input type="number" name="salary_min" placeholder="Min Salary" value={form.salary_min} onChange={handleChange} />
-            <input type="number" name="salary_max" placeholder="Max Salary" value={form.salary_max} onChange={handleChange} />
+              <input name="location" placeholder="Location" value={form.location} onChange={handleChange} />
+              <input name="job_type" placeholder="Job Type" value={form.job_type} onChange={handleChange} />
+              <input name="experience_level" placeholder="Experience" value={form.experience_level} onChange={handleChange} />
+              <input type="number" name="salary_min" placeholder="Min Salary" value={form.salary_min} onChange={handleChange} />
+              <input type="number" name="salary_max" placeholder="Max Salary" value={form.salary_max} onChange={handleChange} />
 
-            <textarea name="description" placeholder="Description" value={form.description} onChange={handleChange} />
+              <textarea name="description" placeholder="Job Description" value={form.description} onChange={handleChange} />
+            </div>
 
-            <button disabled={formLoading}>
+            <button className="btn btn-primary" disabled={formLoading}>
               {formLoading ? "Creating..." : "Create Job"}
             </button>
           </form>
         </div>
       )}
 
-      {/* TABLE */}
-      <table>
-        <thead>
-          <tr>
-            {["#", "Title", "Company", "Location", "Salary", "Type", "Experience", "Applications", "Status", "Posted"].map((h) => (
-              <th key={h}>{h}</th>
-            ))}
-          </tr>
-        </thead>
+      {/* SEARCH */}
+      <form onSubmit={handleSearch} className="search-form">
+        <input 
+          value={searchInput} 
+          onChange={(e) => setSearchInput(e.target.value)} 
+          placeholder="Search jobs..."
+        />
+        <button type="submit" className="btn btn-primary">
+          <Search size={16} /> Search
+        </button>
+        {search && (
+          <button type="button" onClick={handleClear} className="btn btn-secondary">
+            Clear
+          </button>
+        )}
+      </form>
 
-        <tbody>
-          {loading ? (
-            <tr><td colSpan={10}>Loading...</td></tr>
-          ) : jobs.map((job, index) => (
-            <tr key={job.job_id}>
-              <td>{(page - 1) * limit + index + 1}</td>
-              <td>{job.title}</td>
-              <td>{job.company_name}</td>
-              <td>{job.location}</td>
-              <td>
-                {job.salary_min && job.salary_max
-                  ? `₹${formatSalary(job.salary_min)} – ₹${formatSalary(job.salary_max)}`
-                  : job.salary_min
-                  ? `₹${formatSalary(job.salary_min)}+`
-                  : "—"}
-              </td>
-              <td>{job.job_type}</td>
-              <td>{job.experience_level}</td>
-              <td>{job.total_applications}</td>
-              <td>{job.status}</td>
-              <td>{new Date(job.created_at).toLocaleDateString()}</td>
+      {/* TABLE */}
+      <div className="table-container">
+        <table>
+          <thead>
+            <tr>
+              {["#", "Title", "Company", "Location", "Salary", "Type", "Experience", "Applications", "Status", "Posted"].map((h) => (
+                <th key={h}>{h}</th>
+              ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+
+          <tbody>
+            {loading ? (
+              <tr><td colSpan={10} style={{ textAlign: "center" }}>Loading jobs...</td></tr>
+            ) : jobs.length === 0 ? (
+              <tr><td colSpan={10} style={{ textAlign: "center" }}>No jobs found.</td></tr>
+            ) : jobs.map((job, index) => (
+              <tr key={job.job_id}>
+                <td>{(page - 1) * limit + index + 1}</td>
+                <td style={{ fontWeight: 500 }}>{job.title}</td>
+                <td>{job.company_name}</td>
+                <td>{job.location}</td>
+                <td>
+                  {job.salary_min && job.salary_max
+                    ? `₹${formatSalary(job.salary_min)} – ₹${formatSalary(job.salary_max)}`
+                    : job.salary_min
+                    ? `₹${formatSalary(job.salary_min)}+`
+                    : "—"}
+                </td>
+                <td><span className="badge">{job.job_type || "N/A"}</span></td>
+                <td>{job.experience_level || "N/A"}</td>
+                <td>{job.total_applications}</td>
+                <td>
+                  <span className={`badge ${job.status === 'open' ? 'badge-success' : 'badge-warning'}`}>
+                    {job.status}
+                  </span>
+                </td>
+                <td>{new Date(job.created_at).toLocaleDateString()}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
     </div>
   );

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import "../assets/form.css";
+import { Search, Plus, X } from "lucide-react";
 
 const API_BASE = "https://studenthub-backend-woad.vercel.app";
 
@@ -190,64 +190,101 @@ function Internships() {
   };
 
   return (
-    <div style={{ padding: "20px" }}>
+    <div>
 
-      <h1>{total} Internships</h1>
+      <div className="page-header">
+        <div>
+          <h1>Internships</h1>
+          <p>Manage {total} upcoming internships</p>
+        </div>
 
-      <button onClick={() => setShowForm(!showForm)}>
-        {showForm ? "Cancel" : "+ Post Internship"}
-      </button>
+        <button 
+          className={showForm ? "btn btn-secondary" : "btn btn-primary"}
+          onClick={() => setShowForm(!showForm)}
+        >
+          {showForm ? <><X size={16} /> Cancel</> : <><Plus size={16} /> Post Internship</>}
+        </button>
+      </div>
 
       {showForm && (
-        <form onSubmit={handleSubmit}>
-          <input name="title" value={form.title} onChange={handleChange} placeholder="Title" required />
+        <div className="form-container">
+          <form onSubmit={handleSubmit}>
+            <h2 className="form-title">Create Internship</h2>
+            {error && <div className="message error">{error}</div>}
+            {success && <div className="message success">{success}</div>}
 
-          <select name="company_id" value={form.company_id} onChange={handleChange} required>
-            <option value="">Select Company</option>
-            {companies.map(c => (
-              <option key={c.company_id} value={c.company_id}>{c.name}</option>
-            ))}
-          </select>
+            <div className="form-grid">
+              <input name="title" value={form.title} onChange={handleChange} placeholder="Internship Title" required />
 
-          <input name="location" value={form.location} onChange={handleChange} placeholder="Location" />
-          <input name="duration" value={form.duration} onChange={handleChange} placeholder="Duration" />
-          <input name="stipend" value={form.stipend} onChange={handleChange} placeholder="Stipend" />
+              <select name="company_id" value={form.company_id} onChange={handleChange} required>
+                <option value="">Select Company</option>
+                {companies.map(c => (
+                  <option key={c.company_id} value={c.company_id}>{c.name}</option>
+                ))}
+              </select>
 
-          <textarea name="description" value={form.description} onChange={handleChange} />
+              <input name="location" value={form.location} onChange={handleChange} placeholder="Location" />
+              <input name="duration" value={form.duration} onChange={handleChange} placeholder="Duration (e.g., 3 months)" />
+              <input name="stipend" value={form.stipend} onChange={handleChange} placeholder="Stipend Amount/Range" />
 
-          <select multiple value={form.skill_ids.map(String)} onChange={handleSkillChange}>
-            {skills.map(s => (
-              <option key={s.skill_id} value={s.skill_id}>{s.name}</option>
-            ))}
-          </select>
+              <textarea name="description" value={form.description} onChange={handleChange} placeholder="Description" />
 
-          <button disabled={formLoading}>
-            {formLoading ? "Creating..." : "Create Internship"}
-          </button>
-        </form>
+              <select multiple value={form.skill_ids.map(String)} onChange={handleSkillChange} className="full-width">
+                <option disabled value="">Select Skills (Multi-select)</option>
+                {skills.map(s => (
+                  <option key={s.skill_id} value={s.skill_id}>{s.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <button className="btn btn-primary" disabled={formLoading}>
+              {formLoading ? "Creating..." : "Create Internship"}
+            </button>
+          </form>
+        </div>
       )}
 
-      <table>
-        <thead>
-          <tr>
-            <th>#</th><th>Title</th><th>Company</th><th>Location</th><th>Stipend</th><th>Duration</th>
-          </tr>
-        </thead>
-        <tbody>
-          {loading ? (
-            <tr><td colSpan={6}>Loading...</td></tr>
-          ) : internships.map((i, index) => (
-            <tr key={i.internship_id}>
-              <td>{index + 1}</td>
-              <td>{i.title}</td>
-              <td>{i.company_name}</td>
-              <td>{i.location}</td>
-              <td>{i.stipend}</td>
-              <td>{i.duration}</td>
+      <form onSubmit={handleSearch} className="search-form">
+        <input 
+          value={searchInput} 
+          onChange={(e) => setSearchInput(e.target.value)} 
+          placeholder="Search internships..."
+        />
+        <button type="submit" className="btn btn-primary">
+          <Search size={16} /> Search
+        </button>
+        {search && (
+          <button type="button" onClick={handleClear} className="btn btn-secondary">
+            Clear
+          </button>
+        )}
+      </form>
+
+      <div className="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th><th>Title</th><th>Company</th><th>Location</th><th>Stipend</th><th>Duration</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr><td colSpan={6} style={{ textAlign: "center" }}>Loading internships...</td></tr>
+            ) : internships.length === 0 ? (
+              <tr><td colSpan={6} style={{ textAlign: "center" }}>No internships found.</td></tr>
+            ) : internships.map((i, index) => (
+              <tr key={i.internship_id}>
+                <td>{(page - 1) * limit + index + 1}</td>
+                <td style={{ fontWeight: 500 }}>{i.title}</td>
+                <td>{i.company_name}</td>
+                <td>{i.location || "Remote"}</td>
+                <td>{i.stipend ? <span className="badge badge-success">{i.stipend}</span> : "Unpaid"}</td>
+                <td>{i.duration || "N/A"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
     </div>
   );

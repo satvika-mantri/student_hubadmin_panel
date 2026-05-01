@@ -3,9 +3,12 @@ import Users from "./users/Users";
 import Companies from "./companies/Companies";
 import Internships from "./internships/Internships";
 import Jobs from "./jobs/Jobs";
+import Courses from "./courses/Courses";
+import Hackathons from "./hackathons/Hackathons";
 import Nav from "./nav/Nav";
 import Login from "./login/Login";
-
+import "./App.css";
+import "./sidebar.css";
 const isLoggedIn = () => localStorage.getItem("token");
 
 const ProtectedRoute = ({ children }) => {
@@ -31,6 +34,8 @@ export default function App() {
           <Route path="/companies" element={<ProtectedRoute><Companies /></ProtectedRoute>} />
           <Route path="/internships" element={<ProtectedRoute><Internships /></ProtectedRoute>} />
           <Route path="/jobs" element={<ProtectedRoute><Jobs /></ProtectedRoute>} />
+          <Route path="/courses" element={<ProtectedRoute><Courses /></ProtectedRoute>} />
+          <Route path="/hackathons" element={<ProtectedRoute><Hackathons /></ProtectedRoute>} />
         </Routes>
       </div>
 
