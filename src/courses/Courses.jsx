@@ -1,5 +1,11 @@
 import { useState, useEffect } from "react";
-import { Search, Plus, X } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Search, Plus, X, BookOpen, GraduationCap, School, Tag } from "lucide-react";
+import StatCard from "../components/StatCard";
+import Pagination from "../components/Pagination";
+import EmptyState from "../components/EmptyState";
+import SearchFilter from "../components/SearchFilter";
+import Modal from "../components/Modal";
 
 const API_BASE = "https://studenthub-backend-woad.vercel.app";
 
@@ -23,7 +29,8 @@ function Courses() {
     const [total, setTotal] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
     const [search, setSearch] = useState("");
-    const [searchInput, setSearchInput] = useState("");
+    const [searchColumn, setSearchColumn] = useState("Title");
+    const [activeTab, setActiveTab] = useState("all");
     const [loading, setLoading] = useState(false);
     const limit = 10;
 
@@ -35,10 +42,12 @@ function Courses() {
     const [isEditing, setIsEditing] = useState(false);
     const [editCourseId, setEditCourseId] = useState(null);
 
+    const [searchInput, setSearchInput] = useState("");
+
     // ================= FETCH =================
     useEffect(() => {
         fetchCourses();
-    }, [page, search]);
+    }, [page, search, searchColumn]);
 
     const fetchCourses = async () => {
         setLoading(true);
@@ -46,7 +55,7 @@ function Courses() {
             const token = localStorage.getItem("token");
 
             const res = await fetch(
-                `${API_BASE}/api/bulk?type=courses&page=${page}&limit=${limit}&search=${search}`,
+                `${API_BASE}/api/bulk?type=courses&page=${page}&limit=${limit}&search=${search}&searchColumn=${searchColumn}`,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -69,7 +78,7 @@ function Courses() {
         }
     };
 
-    // ================= SEARCH =================
+    // ================= SEARCH & TABS =================
     const handleSearch = (e) => {
         e.preventDefault();
         setPage(1);
@@ -151,14 +160,24 @@ function Courses() {
         }
     };
 
+    // ================= DATA LOGIC =================
+    const schoolCourses = courses.filter(c => c.target_group === "school").length;
+    const collegeCourses = courses.filter(c => c.target_group === "college").length;
+    const freeCourses = courses.filter(c => !c.price || c.price === "0" || c.price.toLowerCase() === "free").length;
+
+    const filteredCourses = courses.filter(c => {
+        if (activeTab === "all") return true;
+        return c.target_group === activeTab;
+    });
+
     return (
-        <div>
+        <div className="page" style={{ position: "relative" }}>
 
             {/* HEADER */}
-            <div className="page-header">
+            <div className="page-header" style={{ marginBottom: "32px" }}>
                 <div>
-                    <h1>Courses</h1>
-                    <p>Manage {total} courses</p>
+                    <h1 style={{ fontSize: "28px", marginBottom: "8px" }}>Courses</h1>
+                    <p style={{ color: "var(--text-muted)", fontSize: "14px" }}>Manage platform educational courses</p>
                 </div>
 
                 <button
@@ -180,12 +199,44 @@ function Courses() {
                 </button>
             </div>
 
-            {/* FORM */}
-            {showForm && (
-                <div className="form-container">
-                    <form onSubmit={handleSubmit}>
-                        <h2 className="form-title">{isEditing ? "Edit Course" : "Create Course"}</h2>
+            {/* STATS ROW */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "24px", marginBottom: "32px" }}>
+                <StatCard loading={loading} title="Total Courses" value={total} color="#3b82f6" icon={<BookOpen size={20} color="#3b82f6" />} />
+                <StatCard loading={loading} title="School Courses" value={schoolCourses} color="#f59e0b" icon={<School size={20} color="#f59e0b" />} />
+                <StatCard loading={loading} title="College Courses" value={collegeCourses} color="#06b6d4" icon={<GraduationCap size={20} color="#06b6d4" />} />
+                <StatCard loading={loading} title="Free Courses" value={freeCourses} color="#10b981" icon={<Tag size={20} color="#10b981" />} />
+            </div>
 
+            {/* SEGMENTED TABS */}
+            <div style={{ display: "flex", gap: "12px", marginBottom: "24px", borderBottom: "1px solid var(--border-color)", paddingBottom: "12px" }}>
+                {["all", "school", "college"].map(tab => (
+                    <button
+                        key={tab}
+                        onClick={() => { setActiveTab(tab); setPage(1); }}
+                        style={{
+                            background: "transparent",
+                            border: "none",
+                            color: activeTab === tab ? "var(--text-main)" : "var(--text-muted)",
+                            fontWeight: activeTab === tab ? "600" : "400",
+                            padding: "8px 16px",
+                            cursor: "pointer",
+                            borderBottom: activeTab === tab ? "2px solid #3b82f6" : "2px solid transparent",
+                            transition: "all 0.2s ease"
+                        }}
+                    >
+                        {tab === "all" ? "All Courses" : tab === "school" ? "School Courses" : "College Courses"}
+                    </button>
+                ))}
+            </div>
+
+            {/* FORM */}
+            <Modal isOpen={showForm} onClose={() => {
+                setShowForm(false);
+                setIsEditing(false);
+                setEditCourseId(null);
+                setForm(initialForm);
+            }} title={isEditing ? "Edit Course" : "Create Course"}>
+                    <form onSubmit={handleSubmit}>
                         {error && <div className="message error">{error}</div>}
                         {success && <div className="message success">{success}</div>}
 
@@ -208,88 +259,113 @@ function Courses() {
                             <textarea name="description" value={form.description} onChange={handleChange} placeholder="Description" />
                         </div>
 
-                        <button className="btn btn-primary" disabled={formLoading}>
+                        <button className="btn btn-primary" disabled={formLoading} style={{ marginTop: "16px", width: "100%" }}>
                             {formLoading ? (isEditing ? "Updating..." : "Creating...") : (isEditing ? "Update Course" : "Create Course")}
                         </button>
                     </form>
-                </div>
-            )}
+            </Modal>
 
             {/* SEARCH */}
-            <form onSubmit={handleSearch} className="search-form">
-                <input
-                    value={searchInput}
-                    onChange={(e) => setSearchInput(e.target.value)}
-                    placeholder="Search courses..."
-                />
-                <button type="submit" className="btn btn-primary">
-                    <Search size={16} /> Search
-                </button>
+            <SearchFilter
+                searchColumn={searchColumn}
+                setSearchColumn={setSearchColumn}
+                searchInput={searchInput}
+                setSearchInput={setSearchInput}
+                handleSearch={handleSearch}
+                handleClear={handleClear}
+                isSearchActive={!!search}
+                options={[
+                    { value: "Title", label: "Title" },
+                    { value: "Provider", label: "Provider" },
+                    { value: "Category", label: "Category" },
+                    { value: "Level", label: "Level" },
+                    { value: "Duration", label: "Duration" },
+                    { value: "Price", label: "Price" },
+                    { value: "Rating", label: "Rating" },
+                    { value: "Target Group", label: "Target Group" },
+                    { value: "Status", label: "Status" }
+                ]}
+            />
 
-                {search && (
-                    <button type="button" onClick={handleClear} className="btn btn-secondary">
-                        Clear
-                    </button>
-                )}
-            </form>
+            <style>{`
+                .table-row-hover:hover td {
+                    background-color: rgba(255, 255, 255, 0.04) !important;
+                    transition: background-color 0.2s ease;
+                }
+                .table-row-hover:hover td a {
+                    color: #60a5fa !important;
+                    transition: color 0.2s ease;
+                }
+                .table-row-hover td a {
+                    transition: color 0.2s ease;
+                }
+            `}</style>
 
             {/* TABLE */}
-            <div className="table-container">
-                <table>
+            <div className="table-container" style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", minWidth: "800px" }}>
                     <thead>
                         <tr>
                             <th>#</th>
                             <th>Title</th>
                             <th>Provider</th>
+                            <th>Category</th>
                             <th>Level</th>
                             <th>Duration</th>
+                            <th>Price</th>
+                            <th>Rating</th>
                             <th>Target Group</th>
-                            <th>Actions</th>
+                            <th>Status</th>
                         </tr>
                     </thead>
 
                     <tbody>
                         {loading ? (
                             <tr>
-                                <td colSpan={6} style={{ textAlign: "center" }}>
+                                <td colSpan={10} style={{ textAlign: "center", padding: "40px 0", color: "var(--text-muted)" }}>
                                     Loading courses...
                                 </td>
                             </tr>
-                        ) : courses.length === 0 ? (
-                            <tr>
-                                <td colSpan={6} style={{ textAlign: "center" }}>
-                                    No courses found.
-                                </td>
-                            </tr>
+                        ) : filteredCourses.length === 0 ? (
+                            <EmptyState icon={BookOpen} title="No courses found" description="Try adjusting your search or filters." colSpan={10} />
                         ) : (
-                            courses.map((c, index) => (
-                                <tr key={c.course_id}>
+                            filteredCourses.map((c, index) => {
+                                let statusText = c.status === 1 || c.status === "active" || c.status === "published" ? "Active" : "Draft";
+                                return (
+                                <tr key={c.course_id} className="table-row-hover">
                                     <td>{(page - 1) * limit + index + 1}</td>
-                                    <td style={{ fontWeight: 500 }}>{c.title}</td>
+                                    <td style={{ fontWeight: 600 }}>
+                                        <Link to={`/courses/${c.course_id}`} style={{ color: "#3b82f6", textDecoration: "none", display: "inline-block" }}>
+                                            {c.title || "N/A"}
+                                        </Link>
+                                    </td>
                                     <td>{c.provider || "N/A"}</td>
+                                    <td>{c.category ? <span className="badge">{c.category}</span> : <span style={{ opacity: 0.5 }}>—</span>}</td>
                                     <td>{c.level || "N/A"}</td>
                                     <td>{c.duration || "N/A"}</td>
+                                    <td>{c.price || "Free"}</td>
+                                    <td>{c.rating ? `⭐ ${c.rating}` : "N/A"}</td>
                                     <td>
-                                        <span className={`badge ${c.target_group === 'school' ? 'badge-warning' : 'badge-info'}`}>
+                                        <span className={`badge ${c.target_group === 'school' ? 'badge-warning' : 'badge-info'}`} style={c.target_group === 'school' ? { color: "#f59e0b", background: "rgba(245, 158, 11, 0.15)" } : { color: "#06b6d4", background: "rgba(6, 182, 212, 0.15)" }}>
                                             {c.target_group ? c.target_group.charAt(0).toUpperCase() + c.target_group.slice(1) : "N/A"}
                                         </span>
                                     </td>
                                     <td>
-                                        <button 
-                                            className="badge badge-info" 
-                                            style={{ border: "none", cursor: "pointer" }} 
-                                            onClick={() => handleEdit(c)}
-                                            type="button"
-                                        >
-                                            Edit
-                                        </button>
+                                        {statusText === "Active" ? (
+                                            <span className="badge badge-success" style={{ color: "#10b981", background: "rgba(16, 185, 129, 0.15)", padding: "4px 12px", borderRadius: "99px", fontSize: "12px", fontWeight: "600", border: "1px solid rgba(16, 185, 129, 0.3)" }}>Active</span>
+                                        ) : (
+                                            <span className="badge badge-warning" style={{ color: "#94a3b8", background: "rgba(100, 116, 139, 0.15)", padding: "4px 12px", borderRadius: "99px", fontSize: "12px", fontWeight: "600", border: "1px solid rgba(100, 116, 139, 0.3)" }}>Draft</span>
+                                        )}
                                     </td>
                                 </tr>
-                            ))
+                            )})
                         )}
                     </tbody>
                 </table>
             </div>
+
+            {/* PAGINATION */}
+            <Pagination page={page} totalPages={totalPages} setPage={setPage} />
 
         </div>
     );

@@ -24,6 +24,10 @@ function Nav() {
       {/* NAV LINKS */}
       <div className="nav-section">
         <NavLink to="/" end className="nav-item">
+          <LayoutDashboard className="nav-icon" /> Dashboard
+        </NavLink>
+
+        <NavLink to="/users" className="nav-item">
           <Users className="nav-icon" /> Users
         </NavLink>
 

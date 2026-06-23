@@ -11,7 +11,7 @@ function Hackathons() {
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const limit = 10;
+  const limit = 1000;
 
   useEffect(() => {
     fetchHackathons();
@@ -66,9 +66,9 @@ function Hackathons() {
 
       {/* SEARCH */}
       <form onSubmit={handleSearch} className="search-form">
-        <input 
-          value={searchInput} 
-          onChange={(e) => setSearchInput(e.target.value)} 
+        <input
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
           placeholder="Search hackathons..."
         />
         <button type="submit" className="btn btn-primary">
@@ -125,12 +125,12 @@ function Hackathons() {
           </tbody>
         </table>
       </div>
-      
+
       {/* PAGINATION */}
       {totalPages > 1 && (
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "24px", padding: "0 8px" }}>
-          <button 
-            className="btn btn-secondary" 
+          <button
+            className="btn btn-secondary"
             disabled={page === 1}
             onClick={() => setPage(p => Math.max(1, p - 1))}
           >
@@ -139,8 +139,8 @@ function Hackathons() {
           <span style={{ color: "var(--text-muted)", fontSize: "14px" }}>
             Page {page} of {totalPages}
           </span>
-          <button 
-            className="btn btn-secondary" 
+          <button
+            className="btn btn-secondary"
             disabled={page === totalPages}
             onClick={() => setPage(p => Math.min(totalPages, p + 1))}
           >

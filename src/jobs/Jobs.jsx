@@ -1,22 +1,30 @@
 import { useState, useEffect } from "react";
-import { Search, Plus, X } from "lucide-react";
-
-const API_BASE = "https://studenthub-backend-woad.vercel.app";
+import { Link } from "react-router-dom";
+import { Search, Plus, X, Briefcase, CheckCircle, MapPin, Building2 } from "lucide-react";
+import StatCard from "../components/StatCard";
+import Pagination from "../components/Pagination";
+import EmptyState from "../components/EmptyState";
+import SearchFilter from "../components/SearchFilter";
+import Modal from "../components/Modal";
 
 // 🔥 Salary Formatter
 const formatSalary = (amount) => {
-  if (!amount) return "—";
+  if (!amount) return "Not Disclosed";
 
   if (amount >= 100000) {
-    return (amount / 100000).toFixed(1).replace(".0", "") + "L";
+    return "₹" + (amount / 100000).toFixed(1).replace(".0", "") + "L";
   }
 
   if (amount >= 1000) {
-    return (amount / 1000).toFixed(0) + "K";
+    return "₹" + (amount / 1000).toFixed(0) + "K";
   }
 
-  return amount;
+  return "₹" + amount;
 };
+
+const API_BASE = "https://studenthub-backend-woad.vercel.app";
+
+
 
 function Jobs() {
   const [jobs, setJobs] = useState([]);
@@ -25,6 +33,7 @@ function Jobs() {
   const [totalPages, setTotalPages] = useState(0);
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
+  const [searchColumn, setSearchColumn] = useState("Title");
   const [loading, setLoading] = useState(false);
   const limit = 10;
 
@@ -48,7 +57,7 @@ function Jobs() {
   // ================= FETCH JOBS =================
   useEffect(() => {
     fetchJobs();
-  }, [page, search]);
+  }, [page, search, searchColumn]);
 
   // ================= FETCH COMPANIES =================
   useEffect(() => {
@@ -84,7 +93,7 @@ function Jobs() {
       const token = localStorage.getItem("token");
 
       const res = await fetch(
-        `${API_BASE}/api/bulk?type=jobs&page=${page}&limit=${limit}&search=${search}`,
+        `${API_BASE}/api/bulk?type=jobs&page=${page}&limit=${limit}&search=${search}&searchColumn=${searchColumn}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -187,14 +196,18 @@ function Jobs() {
     setSearchInput("");
   };
 
+  const activeJobs = jobs.filter(j => j.status === 'open' || j.status === 'Active' || j.status === 1).length;
+  const remoteJobs = jobs.filter(j => j.location && j.location.toLowerCase().includes('remote')).length;
+  const hiringCompanies = new Set(jobs.filter(j => j.company_id).map(j => j.company_id)).size;
+
   return (
-    <div>
+    <div className="page" style={{ position: "relative" }}>
 
       {/* HEADER */}
-      <div className="page-header">
+      <div className="page-header" style={{ marginBottom: "32px" }}>
         <div>
-          <h1>Jobs</h1>
-          <p>Manage over {total} job listings</p>
+          <h1 style={{ fontSize: "28px", marginBottom: "8px" }}>Jobs</h1>
+          <p style={{ color: "var(--text-muted)", fontSize: "14px" }}>Manage platform job listings</p>
         </div>
 
         <button
@@ -209,12 +222,17 @@ function Jobs() {
         </button>
       </div>
 
-      {/* FORM */}
-      {showForm && (
-        <div className="form-container">
-          <form onSubmit={handleSubmit}>
-            <h2 className="form-title">Create Job</h2>
+      {/* STATS ROW */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "24px", marginBottom: "32px" }}>
+        <StatCard loading={loading} title="Total Jobs" value={total} color="#3b82f6" icon={<Briefcase size={20} color="#3b82f6" />} />
+        <StatCard loading={loading} title="Active Jobs" value={activeJobs} color="#10b981" icon={<CheckCircle size={20} color="#10b981" />} />
+        <StatCard loading={loading} title="Remote Jobs" value={remoteJobs} color="#f59e0b" icon={<MapPin size={20} color="#f59e0b" />} />
+        <StatCard loading={loading} title="Companies Hiring" value={hiringCompanies} color="#8b5cf6" icon={<Building2 size={20} color="#8b5cf6" />} />
+      </div>
 
+      {/* FORM */}
+      <Modal isOpen={showForm} onClose={() => setShowForm(false)} title="Create Job">
+          <form onSubmit={handleSubmit}>
             {error && <div className="message error">{error}</div>}
             {success && <div className="message success">{success}</div>}
 
@@ -237,36 +255,53 @@ function Jobs() {
               <textarea name="description" placeholder="Job Description" value={form.description} onChange={handleChange} />
             </div>
 
-            <button className="btn btn-primary" disabled={formLoading}>
+            <button className="btn btn-primary" disabled={formLoading} style={{ marginTop: "16px", width: "100%" }}>
               {formLoading ? "Creating..." : "Create Job"}
             </button>
           </form>
-        </div>
-      )}
+      </Modal>
 
       {/* SEARCH */}
-      <form onSubmit={handleSearch} className="search-form">
-        <input 
-          value={searchInput} 
-          onChange={(e) => setSearchInput(e.target.value)} 
-          placeholder="Search jobs..."
-        />
-        <button type="submit" className="btn btn-primary">
-          <Search size={16} /> Search
-        </button>
-        {search && (
-          <button type="button" onClick={handleClear} className="btn btn-secondary">
-            Clear
-          </button>
-        )}
-      </form>
+      <SearchFilter
+        searchColumn={searchColumn}
+        setSearchColumn={setSearchColumn}
+        searchInput={searchInput}
+        setSearchInput={setSearchInput}
+        handleSearch={handleSearch}
+        handleClear={handleClear}
+        isSearchActive={!!search}
+        options={[
+          { value: "Title", label: "Title" },
+          { value: "Company", label: "Company" },
+          { value: "Location", label: "Location" },
+          { value: "Salary", label: "Salary" },
+          { value: "Job Type", label: "Job Type" },
+          { value: "Experience", label: "Experience Level" },
+          { value: "Applications", label: "Applications" },
+          { value: "Status", label: "Status" }
+        ]}
+      />
+
+      <style>{`
+        .table-row-hover:hover td {
+          background-color: rgba(255, 255, 255, 0.04) !important;
+          transition: background-color 0.2s ease;
+        }
+        .table-row-hover:hover td a {
+          color: #60a5fa !important;
+          transition: color 0.2s ease;
+        }
+        .table-row-hover td a {
+          transition: color 0.2s ease;
+        }
+      `}</style>
 
       {/* TABLE */}
       <div className="table-container">
         <table>
           <thead>
             <tr>
-              {["#", "Title", "Company", "Location", "Salary", "Type", "Experience", "Applications", "Status", "Posted"].map((h) => (
+              {["#", "Title", "Company", "Location", "Salary", "Type", "Experience", "Applications", "Status"].map((h) => (
                 <th key={h}>{h}</th>
               ))}
             </tr>
@@ -274,36 +309,46 @@ function Jobs() {
 
           <tbody>
             {loading ? (
-              <tr><td colSpan={10} style={{ textAlign: "center" }}>Loading jobs...</td></tr>
+              <tr><td colSpan={9} style={{ textAlign: "center", padding: "40px 0", color: "var(--text-muted)" }}>Loading jobs...</td></tr>
             ) : jobs.length === 0 ? (
-              <tr><td colSpan={10} style={{ textAlign: "center" }}>No jobs found.</td></tr>
-            ) : jobs.map((job, index) => (
-              <tr key={job.job_id}>
+              <EmptyState icon={Briefcase} title="No jobs found" description="Try adjusting your search or filters." colSpan={9} />
+            ) : jobs.map((job, index) => {
+              let statusText = job.status === 'open' || job.status === 1 || job.status === 'Active' ? 'Active' : 'Closed';
+              return (
+              <tr key={job.job_id} className="table-row-hover">
                 <td>{(page - 1) * limit + index + 1}</td>
-                <td style={{ fontWeight: 500 }}>{job.title}</td>
+                <td style={{ fontWeight: 600 }}>
+                  <Link to={`/jobs/${job.job_id}`} style={{ color: "#3b82f6", textDecoration: "none", display: "inline-block" }}>
+                    {job.title}
+                  </Link>
+                </td>
                 <td>{job.company_name}</td>
                 <td>{job.location}</td>
                 <td>
                   {job.salary_min && job.salary_max
-                    ? `₹${formatSalary(job.salary_min)} – ₹${formatSalary(job.salary_max)}`
+                    ? `${formatSalary(job.salary_min)} – ${formatSalary(job.salary_max)}`
                     : job.salary_min
-                    ? `₹${formatSalary(job.salary_min)}+`
-                    : "—"}
+                      ? `${formatSalary(job.salary_min)}+`
+                      : "Not Disclosed"}
                 </td>
                 <td><span className="badge">{job.job_type || "N/A"}</span></td>
                 <td>{job.experience_level || "N/A"}</td>
-                <td>{job.total_applications}</td>
+                <td>{job.total_applications || 0}</td>
                 <td>
-                  <span className={`badge ${job.status === 'open' ? 'badge-success' : 'badge-warning'}`}>
-                    {job.status}
-                  </span>
+                  {statusText === "Active" ? (
+                    <span className="badge badge-success" style={{ color: "#10b981", background: "rgba(16, 185, 129, 0.15)", padding: "4px 12px", borderRadius: "99px", fontSize: "12px", fontWeight: "600", border: "1px solid rgba(16, 185, 129, 0.3)" }}>Active</span>
+                  ) : (
+                    <span className="badge badge-warning" style={{ color: "#94a3b8", background: "rgba(100, 116, 139, 0.15)", padding: "4px 12px", borderRadius: "99px", fontSize: "12px", fontWeight: "600", border: "1px solid rgba(100, 116, 139, 0.3)" }}>Closed</span>
+                  )}
                 </td>
-                <td>{new Date(job.created_at).toLocaleDateString()}</td>
               </tr>
-            ))}
+            )})}
           </tbody>
         </table>
       </div>
+
+      {/* PAGINATION */}
+      <Pagination page={page} totalPages={totalPages} setPage={setPage} />
 
     </div>
   );
