@@ -19,7 +19,18 @@ const initialForm = {
   skill_ids: [],
 };
 
+const initialForm = {
+  title:       "",
+  company_id:  "",
+  location:    "",
+  duration:    "",
+  stipend:     "",
+  description: "",
+  skill_ids:   [],
+};
+
 function Internships() {
+  // ── List state ──
   const [internships, setInternships] = useState([]);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
